@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "axios": "^1.15.2",
+    "react-router-dom": "^7.14.2",
+    "socket.io-client": "^4.8.3",
+    "zustand": "^5.0.12"
+  }
+}
