@@ -15,8 +15,9 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import api from "../api/axios.js";
+import CardModal from "../components/CardModal.jsx";
+import useSocket from "../hooks/useSocket.js";
 
-// Droppable column component
 function DroppableColumn({ id, children }) {
   const { setNodeRef } = useDroppable({ id });
   return (
@@ -26,8 +27,7 @@ function DroppableColumn({ id, children }) {
   );
 }
 
-// Single draggable card component
-function SortableCard({ card }) {
+function SortableCard({ card, onClick }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: card._id });
 
@@ -41,28 +41,33 @@ function SortableCard({ card }) {
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
-      className="bg-white rounded-lg p-3 shadow-sm cursor-grab hover:shadow-md transition"
+      className="bg-white rounded-lg p-3 shadow-sm hover:shadow-md transition"
     >
-      <p className="text-sm font-medium text-gray-800">{card.title}</p>
-      {card.description && (
-        <p className="text-xs text-gray-400 mt-1">{card.description}</p>
-      )}
-      <div className="flex items-center gap-2 mt-2">
-        <span
-          className={`text-xs px-2 py-0.5 rounded-full font-medium
-          ${card.priority === "high" ? "bg-red-100 text-red-600" :
-            card.priority === "medium" ? "bg-yellow-100 text-yellow-600" :
-            "bg-green-100 text-green-600"}`}
-        >
-          {card.priority}
-        </span>
-        {card.dueDate && (
-          <span className="text-xs text-gray-400">
-            📅 {new Date(card.dueDate).toLocaleDateString()}
-          </span>
+      <div
+        {...attributes}
+        {...listeners}
+        className="cursor-grab mb-1 text-gray-300 hover:text-gray-400 text-xs"
+      >
+        ⠿ drag
+      </div>
+      <div onClick={onClick} className="cursor-pointer">
+        <p className="text-sm font-medium text-gray-800">{card.title}</p>
+        {card.description && (
+          <p className="text-xs text-gray-400 mt-1">{card.description}</p>
         )}
+        <div className="flex items-center gap-2 mt-2">
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium
+            ${card.priority === "high" ? "bg-red-100 text-red-600" :
+              card.priority === "medium" ? "bg-yellow-100 text-yellow-600" :
+              "bg-green-100 text-green-600"}`}>
+            {card.priority}
+          </span>
+          {card.dueDate && (
+            <span className="text-xs text-gray-400">
+              📅 {new Date(card.dueDate).toLocaleDateString()}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -76,12 +81,53 @@ function Board() {
   const [loading, setLoading] = useState(true);
   const [newCardTitle, setNewCardTitle] = useState("");
   const [activeColumn, setActiveColumn] = useState(null);
+  const [selectedCard, setSelectedCard] = useState(null);
+  const [showAddColumn, setShowAddColumn] = useState(false);
+  const [newColumnName, setNewColumnName] = useState("");
+  const socket = useSocket(boardId);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
   useEffect(() => {
     fetchBoard();
   }, [boardId]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("card_moved", (data) => {
+      setCards((prev) =>
+        prev.map((c) =>
+          c._id === data.cardId ? { ...c, column: data.columnId } : c
+        )
+      );
+    });
+
+    socket.on("card_created", (data) => {
+      setCards((prev) => {
+        const exists = prev.find((c) => c._id === data.card._id);
+        if (exists) return prev;
+        return [...prev, data.card];
+      });
+    });
+
+    socket.on("card_updated", (data) => {
+      setCards((prev) =>
+        prev.map((c) => (c._id === data.card._id ? data.card : c))
+      );
+    });
+
+    socket.on("card_deleted", (data) => {
+      setCards((prev) => prev.filter((c) => c._id !== data.cardId));
+    });
+
+    return () => {
+      socket.off("card_moved");
+      socket.off("card_created");
+      socket.off("card_updated");
+      socket.off("card_deleted");
+    };
+  }, [socket]);
 
   const fetchBoard = async () => {
     try {
@@ -118,6 +164,15 @@ function Board() {
       )
     );
 
+    // Emit socket event
+    if (socket) {
+      socket.emit("card_moved", {
+        boardId,
+        cardId: activeCard._id,
+        columnId: targetColumnId,
+      });
+    }
+
     try {
       await api.put(
         `/cards/${board.org}/${boardId}/${activeCard._id}/move`,
@@ -141,8 +196,51 @@ function Board() {
         { title: newCardTitle, priority: "medium" }
       );
       setCards((prev) => [...prev, res.data]);
+
+      // Emit socket event
+      if (socket) {
+        socket.emit("card_created", {
+          boardId,
+          card: res.data,
+        });
+      }
+
       setNewCardTitle("");
       setActiveColumn(null);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleCardUpdate = (updatedCard, deletedId) => {
+    if (deletedId) {
+      setCards((prev) => prev.filter((c) => c._id !== deletedId));
+      // Emit socket event
+      if (socket) {
+        socket.emit("card_deleted", { boardId, cardId: deletedId });
+      }
+    } else {
+      setCards((prev) =>
+        prev.map((c) => (c._id === updatedCard._id ? updatedCard : c))
+      );
+      // Emit socket event
+      if (socket) {
+        socket.emit("card_updated", { boardId, card: updatedCard });
+      }
+    }
+  };
+
+  const handleAddColumn = async (e) => {
+    e.preventDefault();
+    if (!newColumnName.trim()) return;
+    try {
+      const res = await api.post(
+        `/boards/${board.org}/${boardId}/columns`,
+        { name: newColumnName }
+      );
+      setBoard(res.data);
+      setNewColumnName("");
+      setShowAddColumn(false);
     } catch (err) {
       console.error(err);
     }
@@ -182,6 +280,8 @@ function Board() {
         onDragEnd={handleDragEnd}
       >
         <div className="flex gap-4 p-6 overflow-x-auto">
+
+          {/* Columns */}
           {board.columns
             .sort((a, b) => a.order - b.order)
             .map((column) => (
@@ -204,7 +304,11 @@ function Board() {
                     strategy={verticalListSortingStrategy}
                   >
                     {getColumnCards(column._id).map((card) => (
-                      <SortableCard key={card._id} card={card} />
+                      <SortableCard
+                        key={card._id}
+                        card={card}
+                        onClick={() => setSelectedCard(card)}
+                      />
                     ))}
                   </SortableContext>
                 </DroppableColumn>
@@ -248,8 +352,60 @@ function Board() {
                 )}
               </div>
             ))}
+
+          {/* Add Column — OUTSIDE the map */}
+          <div className="flex-shrink-0 w-72">
+            {showAddColumn ? (
+              <form
+                onSubmit={handleAddColumn}
+                className="bg-gray-100 rounded-xl p-3 flex flex-col gap-2"
+              >
+                <input
+                  autoFocus
+                  type="text"
+                  value={newColumnName}
+                  onChange={(e) => setNewColumnName(e.target.value)}
+                  placeholder="Column name..."
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-blue-600 text-white py-1.5 rounded-lg text-sm font-semibold hover:bg-blue-700"
+                  >
+                    Add
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddColumn(false)}
+                    className="flex-1 bg-gray-200 text-gray-700 py-1.5 rounded-lg text-sm hover:bg-gray-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <button
+                onClick={() => setShowAddColumn(true)}
+                className="w-full bg-blue-600 bg-opacity-30 hover:bg-opacity-50 text-white rounded-xl py-3 text-sm font-semibold transition"
+              >
+                + Add Column
+              </button>
+            )}
+          </div>
+
         </div>
       </DndContext>
+
+      {selectedCard && (
+        <CardModal
+          card={selectedCard}
+          boardId={boardId}
+          orgId={board.org}
+          onClose={() => setSelectedCard(null)}
+          onUpdate={handleCardUpdate}
+        />
+      )}
     </div>
   );
 }
