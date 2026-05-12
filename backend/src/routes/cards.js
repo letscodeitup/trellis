@@ -1,10 +1,10 @@
 import express from "express";
 import Card from "../models/Card.js";
 import protect from "../middleware/auth.js";
+import Activity from "../models/Activity.js";
 
 const router = express.Router();
 
-// Create card
 router.post("/:orgId/:boardId/:columnId", protect, async (req, res) => {
   try {
     const { title, description, priority, dueDate, assignees } = req.body;
@@ -29,12 +29,20 @@ router.post("/:orgId/:boardId/:columnId", protect, async (req, res) => {
       createdBy: req.user._id,
     });
 
+    // Log activity
+    await Activity.create({
+      org: req.params.orgId,
+      board: req.params.boardId,
+      card: card._id,
+      user: req.user._id,
+      action: `created card "${card.title}"`,
+    });
+
     res.status(201).json(card);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
-
 // Get all cards for a board
 router.get("/:orgId/:boardId", protect, async (req, res) => {
   try {
@@ -79,6 +87,17 @@ router.put("/:orgId/:boardId/:cardId", protect, async (req, res) => {
 // Delete card
 router.delete("/:orgId/:boardId/:cardId", protect, async (req, res) => {
   try {
+    const card = await Card.findById(req.params.cardId);
+    if (!card) return res.status(404).json({ message: "Card not found" });
+
+    await Activity.create({
+      org: req.params.orgId,
+      board: req.params.boardId,
+      card: card._id,
+      user: req.user._id,
+      action: `deleted card "${card.title}"`,
+    });
+
     await Card.findByIdAndDelete(req.params.cardId);
     res.json({ message: "Card deleted" });
   } catch (error) {
@@ -98,6 +117,16 @@ router.put("/:orgId/:boardId/:cardId/move", protect, async (req, res) => {
     );
 
     if (!card) return res.status(404).json({ message: "Card not found" });
+
+    // Log activity
+    await Activity.create({
+      org: req.params.orgId,
+      board: req.params.boardId,
+      card: card._id,
+      user: req.user._id,
+      action: `moved card "${card.title}"`,
+    });
+
     res.json(card);
   } catch (error) {
     res.status(500).json({ message: error.message });

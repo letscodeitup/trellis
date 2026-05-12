@@ -85,6 +85,8 @@ function Board() {
   const [showAddColumn, setShowAddColumn] = useState(false);
   const [newColumnName, setNewColumnName] = useState("");
   const socket = useSocket(boardId);
+  const [activities, setActivities] = useState([]);
+const [showActivity, setShowActivity] = useState(false);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -130,16 +132,25 @@ function Board() {
   }, [socket]);
 
   const fetchBoard = async () => {
-    try {
-      const res = await api.get(`/boards/org/${boardId}`);
-      setBoard(res.data.board);
-      setCards(res.data.cards);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    const res = await api.get(`/boards/org/${boardId}`);
+    setBoard(res.data.board);
+    setCards(res.data.cards);
+    fetchActivity(res.data.board.org);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+};
+  const fetchActivity = async (orgId) => {
+  try {
+    const res = await api.get(`/activity/${orgId}/${boardId}`);
+    setActivities(res.data);
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   const getColumnCards = (columnId) => {
     return cards.filter((c) => c.column === columnId);
@@ -260,7 +271,7 @@ function Board() {
       </div>
     );
 
-  return (
+return (
     <div className="min-h-screen bg-blue-700">
       <nav className="bg-blue-800 text-white px-6 py-3 flex justify-between items-center">
         <div className="flex items-center gap-3">
@@ -272,6 +283,12 @@ function Board() {
           </button>
           <h1 className="font-bold text-lg">{board.name}</h1>
         </div>
+        <button
+          onClick={() => setShowActivity(!showActivity)}
+          className="bg-blue-700 hover:bg-blue-600 px-4 py-1.5 rounded-lg text-sm font-medium"
+        >
+          📋 Activity
+        </button>
       </nav>
 
       <DndContext
@@ -396,6 +413,45 @@ function Board() {
 
         </div>
       </DndContext>
+
+      {/* Activity Panel */}
+      {showActivity && (
+        <div className="fixed right-0 top-0 h-full w-80 bg-white shadow-2xl z-40 flex flex-col">
+          <div className="flex justify-between items-center p-4 border-b">
+            <h2 className="font-bold text-gray-800">Activity Log</h2>
+            <button
+              onClick={() => setShowActivity(false)}
+              className="text-gray-400 hover:text-gray-600 text-xl"
+            >
+              ×
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+            {activities.length === 0 ? (
+              <p className="text-gray-400 text-sm text-center mt-4">
+                No activity yet
+              </p>
+            ) : (
+              activities.map((activity) => (
+                <div key={activity._id} className="flex gap-3 items-start">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                    {activity.user?.name?.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-800">
+                      <span className="font-medium">{activity.user?.name}</span>{" "}
+                      {activity.action}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {new Date(activity.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {selectedCard && (
         <CardModal

@@ -11,10 +11,12 @@ import boardRoutes from "./routes/boards.js";
 import cardRoutes from "./routes/cards.js";
 import { createServer } from "http";
 import { initSocket } from "./socket/index.js";
+import notificationRoutes from "./routes/notifications.js";
 dotenv.config();
 connectDB();
 
 const app = express();
+app.use("/api/activity", notificationRoutes);
 
 app.use(helmet());
 app.use(morgan("dev"));
