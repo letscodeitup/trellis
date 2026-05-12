@@ -87,6 +87,8 @@ function Board() {
   const socket = useSocket(boardId);
   const [activities, setActivities] = useState([]);
 const [showActivity, setShowActivity] = useState(false);
+const [searchQuery, setSearchQuery] = useState("");
+const [priorityFilter, setPriorityFilter] = useState("all");
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -152,9 +154,17 @@ const [showActivity, setShowActivity] = useState(false);
   }
 };
 
-  const getColumnCards = (columnId) => {
-    return cards.filter((c) => c.column === columnId);
-  };
+ const getColumnCards = (columnId) => {
+  return cards.filter((c) => {
+    const matchesColumn = c.column === columnId;
+    const matchesSearch = searchQuery
+      ? c.title.toLowerCase().includes(searchQuery.toLowerCase())
+      : true;
+    const matchesPriority =
+      priorityFilter === "all" ? true : c.priority === priorityFilter;
+    return matchesColumn && matchesSearch && matchesPriority;
+  });
+};
 
   const handleDragEnd = async (event) => {
     const { active, over } = event;
@@ -274,23 +284,44 @@ const [showActivity, setShowActivity] = useState(false);
 return (
     <div className="min-h-screen bg-blue-700">
       <nav className="bg-blue-800 text-white px-6 py-3 flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate("/dashboard")}
-            className="text-blue-200 hover:text-white text-sm"
-          >
-            ← Dashboard
-          </button>
-          <h1 className="font-bold text-lg">{board.name}</h1>
-        </div>
-        <button
-          onClick={() => setShowActivity(!showActivity)}
-          className="bg-blue-700 hover:bg-blue-600 px-4 py-1.5 rounded-lg text-sm font-medium"
-        >
-          📋 Activity
-        </button>
-      </nav>
+  <div className="flex items-center gap-3">
+    <button
+      onClick={() => navigate("/dashboard")}
+      className="text-blue-200 hover:text-white text-sm"
+    >
+      ← Dashboard
+    </button>
+    <h1 className="font-bold text-lg">{board.name}</h1>
+  </div>
 
+  {/* Search bar */}
+  <input
+    type="text"
+    value={searchQuery}
+    onChange={(e) => setSearchQuery(e.target.value)}
+    placeholder="🔍 Search cards..."
+    className="bg-blue-700 text-white placeholder-blue-300 px-4 py-1.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-48"
+  />
+
+  <select
+  value={priorityFilter}
+  onChange={(e) => setPriorityFilter(e.target.value)}
+  className="bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+>
+  <option value="all">All priorities</option>
+  <option value="high">🔴 High</option>
+  <option value="medium">🟡 Medium</option>
+  <option value="low">🟢 Low</option>
+</select>
+
+  <button
+    onClick={() => setShowActivity(!showActivity)}
+    className="bg-blue-700 hover:bg-blue-600 px-4 py-1.5 rounded-lg text-sm font-medium"
+  >
+    📋 Activity
+  </button>
+</nav>
+      
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}

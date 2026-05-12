@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../store/authStore.js";
 import useBoardStore from "../store/boardStore.js";
-
+import toast from "react-hot-toast";
 function Dashboard() {
   const { user, logout } = useAuthStore();
-  const { orgs, boards, loading, getOrgs, createOrg, getBoards, createBoard } = useBoardStore();
+  const { orgs, boards, loading, getOrgs, createOrg, getBoards, createBoard ,deleteBoard} = useBoardStore();
   const navigate = useNavigate();
 
   const [selectedOrg, setSelectedOrg] = useState(null);
@@ -13,6 +13,7 @@ function Dashboard() {
   const [showBoardModal, setShowBoardModal] = useState(false);
   const [orgName, setOrgName] = useState("");
   const [boardName, setBoardName] = useState("");
+  
 
   useEffect(() => {
     getOrgs();
@@ -23,28 +24,47 @@ function Dashboard() {
   }, [selectedOrg]);
 
   const handleCreateOrg = async (e) => {
-    e.preventDefault();
-    const org = await createOrg(orgName);
-    if (org) {
-      setOrgName("");
-      setShowOrgModal(false);
-      setSelectedOrg(org);
-    }
-  };
+  e.preventDefault();
+  const org = await createOrg(orgName);
+  if (org) {
+    toast.success("Workspace created! 🎉");
+    setOrgName("");
+    setShowOrgModal(false);
+    setSelectedOrg(org);
+  } else {
+    toast.error("Failed to create workspace");
+  }
+};
 
-  const handleCreateBoard = async (e) => {
-    e.preventDefault();
-    const board = await createBoard(selectedOrg._id, { name: boardName });
-    if (board) {
-      setBoardName("");
-      setShowBoardModal(false);
-    }
-  };
+ const handleCreateBoard = async (e) => {
+  e.preventDefault();
+  const board = await createBoard(selectedOrg._id, { name: boardName });
+  if (board) {
+    toast.success("Board created! 🚀");
+    setBoardName("");
+    setShowBoardModal(false);
+  } else {
+    toast.error("Failed to create board");
+  }
+};
 
   const handleLogout = async () => {
-    await logout();
-    navigate("/login");
-  };
+  await logout();
+  toast.success("Logged out successfully");
+  navigate("/login");
+};
+
+
+const handleDeleteBoard = async (e, boardId) => {
+  e.stopPropagation();
+  if (!confirm("Delete this board? This cannot be undone.")) return;
+  const success = await deleteBoard(selectedOrg._id, boardId);
+  if (success) {
+    toast.success("Board deleted!");
+  } else {
+    toast.error("Failed to delete board");
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -123,16 +143,27 @@ function Dashboard() {
               ) : (
                 <div className="grid grid-cols-3 gap-4">
                   {boards.map((board) => (
-                    <div
-                      key={board._id}
-                      onClick={() => navigate(`/board/${board._id}`)}
-                      className="bg-white rounded-xl shadow p-5 cursor-pointer hover:shadow-md transition"
-                    >
-                      <h3 className="font-semibold text-gray-800">{board.name}</h3>
-                      <p className="text-sm text-gray-500 mt-1">{board.description || "No description"}</p>
-                      <span className="text-xs text-blue-500 mt-2 block">{board.visibility}</span>
-                    </div>
-                  ))}
+  <div
+    key={board._id}
+    onClick={() => navigate(`/board/${board._id}`)}
+    className="bg-white rounded-xl shadow p-5 cursor-pointer hover:shadow-md transition relative group"
+  >
+    <button
+      onClick={(e) => handleDeleteBoard(e, board._id)}
+      className="absolute top-3 right-3 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition text-lg"
+    >
+      🗑️
+    </button>
+    <h3 className="font-semibold text-gray-800">{board.name}</h3>
+    <p className="text-sm text-gray-500 mt-1">
+      {board.description || "No description"}
+    </p>
+    <span className="text-xs text-blue-500 mt-2 block">
+      {board.visibility}
+    </span>
+  </div>
+))}
+                  
                 </div>
               )}
             </>

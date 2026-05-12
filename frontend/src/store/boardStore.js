@@ -37,6 +37,20 @@ const useBoardStore = create((set) => ({
     }
   },
 
+
+  deleteBoard: async (orgId, boardId) => {
+  try {
+    await api.delete(`/boards/${orgId}/${boardId}`);
+    set((state) => ({
+      boards: state.boards.filter((b) => b._id !== boardId),
+    }));
+    return true;
+  } catch (err) {
+    set({ error: err.response?.data?.message });
+    return false;
+  }
+},
+
   createBoard: async (orgId, data) => {
     try {
       const res = await api.post(`/boards/${orgId}`, data);
@@ -47,5 +61,8 @@ const useBoardStore = create((set) => ({
     }
   },
 }));
+
+
+
 
 export default useBoardStore;
