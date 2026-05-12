@@ -42,8 +42,8 @@ router.get("/:orgId", protect, async (req, res) => {
   }
 });
 
-// Get single board with cards
-router.get("/:orgId/:boardId", protect, async (req, res) => {
+// Get board by boardId only
+router.get("/org/:boardId", protect, async (req, res) => {
   try {
     const board = await Board.findById(req.params.boardId)
       .populate("members", "name email avatar")
@@ -61,20 +61,7 @@ router.get("/:orgId/:boardId", protect, async (req, res) => {
   }
 });
 
-// Update board
-router.put("/:orgId/:boardId", protect, async (req, res) => {
-  try {
-    const board = await Board.findByIdAndUpdate(
-      req.params.boardId,
-      req.body,
-      { new: true }
-    );
-    if (!board) return res.status(404).json({ message: "Board not found" });
-    res.json(board);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
+
 
 // Delete board
 router.delete("/:orgId/:boardId", protect, async (req, res) => {

@@ -11,10 +11,6 @@ import boardRoutes from "./routes/boards.js";
 import cardRoutes from "./routes/cards.js";
 import { createServer } from "http";
 import { initSocket } from "./socket/index.js";
-
-
-
-
 dotenv.config();
 connectDB();
 
