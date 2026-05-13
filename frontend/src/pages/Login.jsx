@@ -57,7 +57,7 @@ function Login() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "#0a0f14",
+      background: "#0f1923",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -100,11 +100,11 @@ function Login() {
         .login-card {
           animation: fadeInUp 0.5s ease forwards;
         }
-        .sign-btn:hover {
+        .login-btn:hover {
           transform: translateY(-2px);
           box-shadow: 0 0 36px rgba(6,182,212,0.65) !important;
         }
-        .sign-btn:active {
+        .login-btn:active {
           transform: translateY(0px);
         }
       `}</style>
@@ -113,29 +113,29 @@ function Login() {
       <div style={{
         position: "absolute",
         inset: 0,
-       backgroundImage: `
-  linear-gradient(rgba(6,182,212,0.07) 1px, transparent 1px),
-  linear-gradient(90deg, rgba(6,182,212,0.07) 1px, transparent 1px),
+        backgroundImage: `
+          linear-gradient(rgba(6,182,212,0.07) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(6,182,212,0.07) 1px, transparent 1px)
         `,
         backgroundSize: "40px 40px",
         animation: "gridMove 5s linear infinite",
         pointerEvents: "none",
       }} />
 
-      {/* Glow blob 1 — cyan */}
+      {/* Glow blob 1 */}
       <div style={{
         position: "absolute",
         width: "550px",
         height: "550px",
         borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(6,182,212,0.18) 0%, transparent 70%)",
+        background: "radial-gradient(circle, rgba(6,182,212,0.22) 0%, transparent 70%)",
         top: "-180px",
         left: "-180px",
         animation: "float1 9s ease-in-out infinite",
         pointerEvents: "none",
       }} />
 
-      {/* Glow blob 2 — teal */}
+      {/* Glow blob 2 */}
       <div style={{
         position: "absolute",
         width: "420px",
@@ -148,7 +148,7 @@ function Login() {
         pointerEvents: "none",
       }} />
 
-      {/* Glow blob 3 — blue accent */}
+      {/* Glow blob 3 */}
       <div style={{
         position: "absolute",
         width: "300px",
@@ -163,7 +163,7 @@ function Login() {
 
       {/* Card */}
       <div className="login-card" style={{
-        background: "rgba(255,255,255,0.03)",
+        background: "rgba(255,255,255,0.05)",
         border: "1px solid rgba(6,182,212,0.12)",
         borderRadius: "24px",
         padding: "44px 40px",
@@ -191,7 +191,6 @@ function Login() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 0 24px rgba(6,182,212,0.5)",
               animation: "glowPulse 3s ease-in-out infinite",
             }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -250,7 +249,7 @@ function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="sign-btn"
+            className="login-btn"
             style={{
               width: "100%",
               background: loading

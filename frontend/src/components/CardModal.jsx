@@ -64,10 +64,9 @@ function CardModal({ card, boardId, orgId, onClose, onUpdate }) {
 
   const saveChecklist = async (updated) => {
     try {
-      await api.put(
-        `/cards/${orgId}/${boardId}/${card._id}/checklist`,
-        { checklist: updated }
-      );
+      await api.put(`/cards/${orgId}/${boardId}/${card._id}/checklist`, {
+        checklist: updated,
+      });
     } catch (err) {
       console.error(err);
     }
@@ -75,28 +74,137 @@ function CardModal({ card, boardId, orgId, onClose, onUpdate }) {
 
   const doneCount = checklist.filter((i) => i.done).length;
 
+  const priorityConfig = {
+    high: { color: "#f87171", bg: "rgba(239,68,68,0.1)", border: "rgba(239,68,68,0.25)" },
+    medium: { color: "#fbbf24", bg: "rgba(251,191,36,0.1)", border: "rgba(251,191,36,0.25)" },
+    low: { color: "#34d399", bg: "rgba(52,211,153,0.1)", border: "rgba(52,211,153,0.25)" },
+  };
+
+  const inputStyle = {
+    width: "100%",
+    background: "rgba(255,255,255,0.04)",
+    border: "1.5px solid rgba(255,255,255,0.08)",
+    borderRadius: "10px",
+    padding: "10px 14px",
+    color: "#fff",
+    fontSize: "13px",
+    outline: "none",
+    fontFamily: "'DM Sans', sans-serif",
+    boxSizing: "border-box",
+    transition: "border-color 0.2s",
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.7)",
+        backdropFilter: "blur(8px)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 50,
+        padding: "20px",
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "#111c27",
+          border: "1px solid rgba(255,255,255,0.07)",
+          borderRadius: "20px",
+          width: "100%",
+          maxWidth: "520px",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          boxShadow: "0 25px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(6,182,212,0.08)",
+          fontFamily: "'DM Sans', sans-serif",
+        }}
+      >
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+          * { box-sizing: border-box; }
+          input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.2); }
+          textarea { resize: none; }
+          .check-item { transition: opacity 0.15s; }
+          .check-item:hover .del-check { opacity: 1 !important; }
+        `}</style>
+
         {/* Header */}
-        <div className="flex justify-between items-start p-6 border-b">
+        <div style={{
+          padding: "20px 24px",
+          borderBottom: "1px solid rgba(255,255,255,0.05)",
+          display: "flex",
+          alignItems: "flex-start",
+          gap: "12px",
+        }}>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="text-lg font-bold text-gray-800 w-full focus:outline-none border-b-2 border-transparent focus:border-blue-500 pb-1"
+            style={{
+              flex: 1,
+              background: "transparent",
+              border: "none",
+              borderBottom: "1.5px solid rgba(255,255,255,0.08)",
+              borderRadius: 0,
+              padding: "4px 0",
+              color: "#fff",
+              fontSize: "16px",
+              fontWeight: "600",
+              outline: "none",
+              fontFamily: "'DM Sans', sans-serif",
+              letterSpacing: "-0.3px",
+            }}
+            onFocus={(e) => e.target.style.borderBottomColor = "rgba(6,182,212,0.5)"}
+            onBlur={(e) => e.target.style.borderBottomColor = "rgba(255,255,255,0.08)"}
           />
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl ml-4"
+            style={{
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: "8px",
+              width: "32px",
+              height: "32px",
+              color: "rgba(255,255,255,0.4)",
+              cursor: "pointer",
+              fontSize: "18px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              fontFamily: "'DM Sans', sans-serif",
+              transition: "background 0.15s, color 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(239,68,68,0.1)";
+              e.currentTarget.style.color = "#f87171";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+              e.currentTarget.style.color = "rgba(255,255,255,0.4)";
+            }}
           >
             ×
           </button>
         </div>
 
-        <div className="p-6 flex flex-col gap-5">
+        {/* Body */}
+        <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: "20px" }}>
+
           {/* Description */}
           <div>
-            <label className="text-sm font-semibold text-gray-600 mb-1 block">
+            <label style={{
+              display: "block",
+              fontSize: "11px",
+              fontWeight: "600",
+              color: "rgba(255,255,255,0.35)",
+              marginBottom: "8px",
+              letterSpacing: "0.8px",
+              textTransform: "uppercase",
+            }}>
               Description
             </label>
             <textarea
@@ -104,47 +212,94 @@ function CardModal({ card, boardId, orgId, onClose, onUpdate }) {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add a description..."
               rows={3}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              style={{
+                ...inputStyle,
+                lineHeight: "1.5",
+              }}
+              onFocus={(e) => e.target.style.borderColor = "rgba(6,182,212,0.4)"}
+              onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.08)"}
             />
           </div>
 
           {/* Priority + Due Date */}
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="text-sm font-semibold text-gray-600 mb-1 block">
+          <div style={{ display: "flex", gap: "12px" }}>
+            <div style={{ flex: 1 }}>
+              <label style={{
+                display: "block",
+                fontSize: "11px",
+                fontWeight: "600",
+                color: "rgba(255,255,255,0.35)",
+                marginBottom: "8px",
+                letterSpacing: "0.8px",
+                textTransform: "uppercase",
+              }}>
                 Priority
               </label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={{
+                  ...inputStyle,
+                  cursor: "pointer",
+                  color: priorityConfig[priority]?.color || "#fff",
+                }}
+                onFocus={(e) => e.target.style.borderColor = "rgba(6,182,212,0.4)"}
+                onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.08)"}
               >
-                <option value="low">🟢 Low</option>
-                <option value="medium">🟡 Medium</option>
-                <option value="high">🔴 High</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
               </select>
             </div>
-            <div className="flex-1">
-              <label className="text-sm font-semibold text-gray-600 mb-1 block">
+            <div style={{ flex: 1 }}>
+              <label style={{
+                display: "block",
+                fontSize: "11px",
+                fontWeight: "600",
+                color: "rgba(255,255,255,0.35)",
+                marginBottom: "8px",
+                letterSpacing: "0.8px",
+                textTransform: "uppercase",
+              }}>
                 Due Date
               </label>
               <input
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={{
+                  ...inputStyle,
+                  colorScheme: "dark",
+                }}
+                onFocus={(e) => e.target.style.borderColor = "rgba(6,182,212,0.4)"}
+                onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.08)"}
               />
             </div>
           </div>
 
           {/* Checklist */}
           <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="text-sm font-semibold text-gray-600">
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "10px",
+            }}>
+              <label style={{
+                fontSize: "11px",
+                fontWeight: "600",
+                color: "rgba(255,255,255,0.35)",
+                letterSpacing: "0.8px",
+                textTransform: "uppercase",
+              }}>
                 Checklist
               </label>
               {checklist.length > 0 && (
-                <span className="text-xs text-gray-400">
+                <span style={{
+                  fontSize: "11px",
+                  color: "rgba(255,255,255,0.3)",
+                  fontWeight: "500",
+                }}>
                   {doneCount}/{checklist.length} done
                 </span>
               )}
@@ -152,55 +307,111 @@ function CardModal({ card, boardId, orgId, onClose, onUpdate }) {
 
             {/* Progress bar */}
             {checklist.length > 0 && (
-              <div className="w-full bg-gray-200 rounded-full h-1.5 mb-3">
-                <div
-                  className="bg-blue-500 h-1.5 rounded-full transition-all"
-                  style={{
-                    width: `${(doneCount / checklist.length) * 100}%`,
-                  }}
-                />
+              <div style={{
+                width: "100%",
+                height: "3px",
+                background: "rgba(255,255,255,0.06)",
+                borderRadius: "3px",
+                marginBottom: "12px",
+                overflow: "hidden",
+              }}>
+                <div style={{
+                  width: `${(doneCount / checklist.length) * 100}%`,
+                  height: "100%",
+                  background: "linear-gradient(90deg, #0891b2, #06b6d4)",
+                  borderRadius: "3px",
+                  transition: "width 0.3s ease",
+                  boxShadow: "0 0 8px rgba(6,182,212,0.4)",
+                }} />
               </div>
             )}
 
-            {/* Checklist items */}
-            <div className="flex flex-col gap-2 mb-2">
+            {/* Items */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "10px" }}>
               {checklist.map((item, index) => (
-                <div key={index} className="flex items-center gap-2 group">
+                <div
+                  key={index}
+                  className="check-item"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "8px 10px",
+                    background: "rgba(255,255,255,0.02)",
+                    borderRadius: "8px",
+                    border: "1px solid rgba(255,255,255,0.04)",
+                  }}
+                >
                   <input
                     type="checkbox"
                     checked={item.done}
                     onChange={() => handleToggleCheck(index)}
-                    className="w-4 h-4 accent-blue-500"
+                    style={{
+                      width: "15px",
+                      height: "15px",
+                      accentColor: "#06b6d4",
+                      cursor: "pointer",
+                      flexShrink: 0,
+                    }}
                   />
-                  <span
-                    className={`flex-1 text-sm ${
-                      item.done ? "line-through text-gray-400" : "text-gray-700"
-                    }`}
-                  >
+                  <span style={{
+                    flex: 1,
+                    fontSize: "13px",
+                    color: item.done ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.7)",
+                    textDecoration: item.done ? "line-through" : "none",
+                    transition: "color 0.15s",
+                  }}>
                     {item.text}
                   </span>
                   <button
                     onClick={() => handleDeleteCheckItem(index)}
-                    className="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition text-xs"
+                    className="del-check"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#f87171",
+                      cursor: "pointer",
+                      fontSize: "14px",
+                      opacity: 0,
+                      padding: "0 2px",
+                      fontFamily: "'DM Sans', sans-serif",
+                      transition: "opacity 0.15s",
+                    }}
                   >
-                    ✕
+                    ×
                   </button>
                 </div>
               ))}
             </div>
 
             {/* Add checklist item */}
-            <form onSubmit={handleAddCheckItem} className="flex gap-2">
+            <form onSubmit={handleAddCheckItem} style={{ display: "flex", gap: "8px" }}>
               <input
                 type="text"
                 value={newCheckItem}
                 onChange={(e) => setNewCheckItem(e.target.value)}
-                placeholder="Add item..."
-                className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Add checklist item..."
+                style={{ ...inputStyle, flex: 1 }}
+                onFocus={(e) => e.target.style.borderColor = "rgba(6,182,212,0.4)"}
+                onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.08)"}
               />
               <button
                 type="submit"
-                className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-blue-700"
+                style={{
+                  background: "rgba(6,182,212,0.1)",
+                  border: "1px solid rgba(6,182,212,0.2)",
+                  borderRadius: "10px",
+                  padding: "10px 16px",
+                  color: "#06b6d4",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  fontFamily: "'DM Sans', sans-serif",
+                  whiteSpace: "nowrap",
+                  transition: "background 0.15s",
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(6,182,212,0.18)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "rgba(6,182,212,0.1)"}
               >
                 Add
               </button>
@@ -209,26 +420,82 @@ function CardModal({ card, boardId, orgId, onClose, onUpdate }) {
         </div>
 
         {/* Footer */}
-        <div className="flex justify-between items-center px-6 py-4 border-t bg-gray-50 rounded-b-2xl">
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "16px 24px",
+          borderTop: "1px solid rgba(255,255,255,0.05)",
+          background: "rgba(0,0,0,0.15)",
+          borderRadius: "0 0 20px 20px",
+        }}>
           <button
             onClick={handleDeleteCard}
-            className="text-red-400 hover:text-red-600 text-sm font-medium"
+            style={{
+              background: "rgba(239,68,68,0.08)",
+              border: "1px solid rgba(239,68,68,0.15)",
+              borderRadius: "8px",
+              padding: "8px 14px",
+              color: "#f87171",
+              fontSize: "13px",
+              fontWeight: "500",
+              cursor: "pointer",
+              fontFamily: "'DM Sans', sans-serif",
+              transition: "background 0.15s",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(239,68,68,0.15)"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "rgba(239,68,68,0.08)"}
           >
-            🗑️ Delete card
+            Delete card
           </button>
-          <div className="flex gap-2">
+
+          <div style={{ display: "flex", gap: "8px" }}>
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-200 rounded-lg"
+              style={{
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: "8px",
+                padding: "8px 16px",
+                color: "rgba(255,255,255,0.4)",
+                fontSize: "13px",
+                fontWeight: "500",
+                cursor: "pointer",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={saving}
-              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              style={{
+                background: saving
+                  ? "rgba(6,182,212,0.3)"
+                  : "linear-gradient(135deg, #0891b2, #06b6d4)",
+                border: "none",
+                borderRadius: "8px",
+                padding: "8px 20px",
+                color: "#fff",
+                fontSize: "13px",
+                fontWeight: "600",
+                cursor: saving ? "not-allowed" : "pointer",
+                fontFamily: "'DM Sans', sans-serif",
+                boxShadow: saving ? "none" : "0 0 16px rgba(6,182,212,0.3)",
+                transition: "transform 0.15s, box-shadow 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                if (!saving) {
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                  e.currentTarget.style.boxShadow = "0 0 24px rgba(6,182,212,0.5)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 0 16px rgba(6,182,212,0.3)";
+              }}
             >
-              {saving ? "Saving..." : "Save"}
+              {saving ? "Saving..." : "Save changes"}
             </button>
           </div>
         </div>
