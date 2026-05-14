@@ -17,6 +17,7 @@ import { CSS } from "@dnd-kit/utilities";
 import api from "../api/axios.js";
 import CardModal from "../components/CardModal.jsx";
 import useSocket from "../hooks/useSocket.js";
+import Navbar from "../components/Navbar.jsx";
 
 function DroppableColumn({ id, children }) {
   const { setNodeRef } = useDroppable({ id });
@@ -424,130 +425,65 @@ function Board() {
       `}</style>
 
       {/* Navbar */}
-      <nav style={{
-        background: "rgba(255,255,255,0.02)",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-        padding: "0 20px",
-        height: "56px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: "12px",
-        backdropFilter: "blur(12px)",
-        position: "sticky",
-        top: 0,
-        zIndex: 10,
-      }}>
 
-        {/* Left */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <button
-            onClick={() => navigate("/dashboard")}
-            style={{
-              background: "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "8px",
-              padding: "6px 12px",
-              color: "rgba(255,255,255,0.5)",
-              fontSize: "13px",
-              cursor: "pointer",
-              fontFamily: "'DM Sans', sans-serif",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              transition: "color 0.15s, background 0.15s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = "#fff";
-              e.currentTarget.style.background = "rgba(255,255,255,0.08)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = "rgba(255,255,255,0.5)";
-              e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path d="M19 12H5M5 12l7-7M5 12l7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-            Dashboard
-          </button>
-
-          <div style={{ width: "1px", height: "20px", background: "rgba(255,255,255,0.08)" }} />
-
-          <span style={{
-            fontSize: "15px",
-            fontWeight: "600",
-            color: "#fff",
-            letterSpacing: "-0.3px",
-          }}>
-            {board.name}
-          </span>
-        </div>
-
-        {/* Center — search + filter */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1, maxWidth: "420px" }}>
-          <div style={{ position: "relative", flex: 1 }}>
-            <svg style={{
-              position: "absolute",
-              left: "10px",
-              top: "50%",
-              transform: "translateY(-50%)",
-              color: "rgba(255,255,255,0.3)",
-            }} width="13" height="13" viewBox="0 0 24 24" fill="none">
-              <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
-              <path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search cards..."
-              className="nav-input"
-              style={{ paddingLeft: "30px", width: "100%" }}
-            />
-          </div>
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            className="nav-select"
-          >
-            <option value="all">All priorities</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
-        </div>
-
-        {/* Right */}
-        <button
-          onClick={() => setShowActivity(!showActivity)}
-          style={{
-            background: showActivity
-              ? "rgba(6,182,212,0.15)"
-              : "rgba(255,255,255,0.05)",
-            border: showActivity
-              ? "1px solid rgba(6,182,212,0.3)"
-              : "1px solid rgba(255,255,255,0.08)",
-            borderRadius: "8px",
-            padding: "7px 14px",
-            color: showActivity ? "#06b6d4" : "rgba(255,255,255,0.5)",
-            fontSize: "13px",
-            fontWeight: "500",
-            cursor: "pointer",
-            fontFamily: "'DM Sans', sans-serif",
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            transition: "all 0.15s",
-          }}
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-            <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-          Activity
-        </button>
-      </nav>
-
+      <Navbar
+  title={board.name}
+  showBack={true}
+  rightContent={
+    <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1, maxWidth: "420px" }}>
+      <div style={{ position: "relative", flex: 1 }}>
+        <svg style={{
+          position: "absolute",
+          left: "10px",
+          top: "50%",
+          transform: "translateY(-50%)",
+          color: "rgba(255,255,255,0.3)",
+          pointerEvents: "none",
+        }} width="13" height="13" viewBox="0 0 24 24" fill="none">
+          <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
+          <path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search cards..."
+          className="nav-input"
+          style={{ paddingLeft: "30px", width: "100%" }}
+        />
+      </div>
+      <select
+        value={priorityFilter}
+        onChange={(e) => setPriorityFilter(e.target.value)}
+        className="nav-select"
+      >
+        <option value="all">All priorities</option>
+        <option value="high">High</option>
+        <option value="medium">Medium</option>
+        <option value="low">Low</option>
+      </select>
+      <button
+        onClick={() => setShowActivity(!showActivity)}
+        style={{
+          background: showActivity ? "rgba(6,182,212,0.15)" : "rgba(255,255,255,0.05)",
+          border: showActivity ? "1px solid rgba(6,182,212,0.3)" : "1px solid rgba(255,255,255,0.08)",
+          borderRadius: "8px",
+          padding: "7px 14px",
+          color: showActivity ? "#06b6d4" : "rgba(255,255,255,0.5)",
+          fontSize: "13px",
+          fontWeight: "500",
+          cursor: "pointer",
+          fontFamily: "'DM Sans', sans-serif",
+          whiteSpace: "nowrap",
+          transition: "all 0.15s",
+        }}
+      >
+        Activity
+      </button>
+    </div>
+  }
+/>
+      
       {/* Board */}
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
         <div style={{

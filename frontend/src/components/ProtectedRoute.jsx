@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import useAuthStore from "../store/authStore.js";
+import Spinner from "./Spinner.jsx";
 
 function ProtectedRoute({ children }) {
   const { user, getMe } = useAuthStore();
@@ -16,15 +17,19 @@ function ProtectedRoute({ children }) {
 
   if (checking) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-400 text-lg">Loading...</p>
+      <div style={{
+        minHeight: "100vh",
+        background: "#0f1923",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}>
+        <Spinner size={40} />
       </div>
     );
   }
 
-  if (!user) {
-    return <Navigate to="/login" />;
-  }
+  if (!user) return <Navigate to="/login" />;
 
   return children;
 }

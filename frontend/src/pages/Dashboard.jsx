@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import useAuthStore from "../store/authStore.js";
 import useBoardStore from "../store/boardStore.js";
+import Navbar from "../components/Navbar.jsx";
+import Sidebar from "../components/Sidebar.jsx";
 
 function Dashboard() {
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const { orgs, boards, loading, getOrgs, createOrg, getBoards, createBoard, deleteBoard } = useBoardStore();
   const navigate = useNavigate();
 
@@ -49,12 +51,6 @@ function Dashboard() {
     const success = await deleteBoard(selectedOrg._id, boardId);
     if (success) toast.success("Board deleted!");
     else toast.error("Failed to delete board");
-  };
-
-  const handleLogout = async () => {
-    await logout();
-    toast.success("Logged out successfully");
-    navigate("/login");
   };
 
   const modalOverlay = {
@@ -119,13 +115,6 @@ function Dashboard() {
           box-shadow: 0 12px 40px rgba(6,182,212,0.15), 0 0 0 1px rgba(6,182,212,0.2) !important;
           border-color: rgba(6,182,212,0.3) !important;
         }
-        .org-btn {
-          transition: background 0.15s, color 0.15s;
-        }
-        .org-btn:hover {
-          background: rgba(6,182,212,0.1) !important;
-          color: #22d3ee !important;
-        }
         .delete-btn {
           opacity: 0;
           transition: opacity 0.2s;
@@ -143,198 +132,17 @@ function Dashboard() {
       `}</style>
 
       {/* Navbar */}
-      <nav style={{
-        background: "rgba(255,255,255,0.03)",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-        padding: "0 24px",
-        height: "60px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        backdropFilter: "blur(12px)",
-        position: "sticky",
-        top: 0,
-        zIndex: 10,
-      }}>
-        {/* Logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={{
-            width: "32px",
-            height: "32px",
-            borderRadius: "8px",
-            background: "linear-gradient(135deg, #0891b2, #06b6d4)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 0 16px rgba(6,182,212,0.4)",
-          }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <rect x="3" y="3" width="7" height="7" rx="2" fill="white"/>
-              <rect x="14" y="3" width="7" height="7" rx="2" fill="white" opacity="0.7"/>
-              <rect x="3" y="14" width="7" height="7" rx="2" fill="white" opacity="0.7"/>
-              <rect x="14" y="14" width="7" height="7" rx="2" fill="white" opacity="0.4"/>
-            </svg>
-          </div>
-          <span style={{
-            fontSize: "18px",
-            fontWeight: "700",
-            color: "#fff",
-            letterSpacing: "-0.5px",
-          }}>Trellis</span>
-        </div>
-
-        {/* Right side */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            background: "rgba(255,255,255,0.05)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: "10px",
-            padding: "6px 12px",
-          }}>
-            <div style={{
-              width: "28px",
-              height: "28px",
-              borderRadius: "50%",
-              background: "linear-gradient(135deg, #0891b2, #06b6d4)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "12px",
-              fontWeight: "700",
-              color: "#fff",
-            }}>
-              {user?.name?.charAt(0).toUpperCase()}
-            </div>
-            <span style={{ color: "rgba(255,255,255,0.7)", fontSize: "13px", fontWeight: "500" }}>
-              {user?.name}
-            </span>
-          </div>
-
-          <button
-            onClick={handleLogout}
-            style={{
-              background: "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "10px",
-              padding: "7px 16px",
-              color: "rgba(255,255,255,0.6)",
-              fontSize: "13px",
-              fontWeight: "500",
-              cursor: "pointer",
-              fontFamily: "'DM Sans', sans-serif",
-              transition: "background 0.15s, color 0.15s",
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = "rgba(239,68,68,0.1)";
-              e.target.style.color = "#f87171";
-              e.target.style.borderColor = "rgba(239,68,68,0.2)";
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = "rgba(255,255,255,0.05)";
-              e.target.style.color = "rgba(255,255,255,0.6)";
-              e.target.style.borderColor = "rgba(255,255,255,0.08)";
-            }}
-          >
-            Sign out
-          </button>
-        </div>
-      </nav>
+      <Navbar />
 
       <div style={{ display: "flex", flex: 1 }}>
 
         {/* Sidebar */}
-        <aside style={{
-          width: "240px",
-          background: "rgba(255,255,255,0.02)",
-          borderRight: "1px solid rgba(255,255,255,0.05)",
-          padding: "20px 12px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "4px",
-        }}>
-          <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "4px 8px",
-            marginBottom: "8px",
-          }}>
-            <span style={{
-              fontSize: "11px",
-              fontWeight: "600",
-              color: "rgba(255,255,255,0.3)",
-              letterSpacing: "0.8px",
-              textTransform: "uppercase",
-            }}>
-              Workspaces
-            </span>
-            <button
-              onClick={() => setShowOrgModal(true)}
-              style={{
-                background: "rgba(6,182,212,0.1)",
-                border: "1px solid rgba(6,182,212,0.2)",
-                borderRadius: "6px",
-                width: "24px",
-                height: "24px",
-                color: "#06b6d4",
-                fontSize: "16px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontFamily: "'DM Sans', sans-serif",
-                transition: "background 0.15s",
-              }}
-              onMouseEnter={(e) => e.target.style.background = "rgba(6,182,212,0.2)"}
-              onMouseLeave={(e) => e.target.style.background = "rgba(6,182,212,0.1)"}
-            >
-              +
-            </button>
-          </div>
-
-          {orgs.length === 0 && (
-            <p style={{
-              color: "rgba(255,255,255,0.25)",
-              fontSize: "13px",
-              padding: "8px",
-              margin: 0,
-            }}>
-              No workspaces yet
-            </p>
-          )}
-
-          {orgs.map((org) => (
-            <button
-              key={org._id}
-              onClick={() => setSelectedOrg(org)}
-              className="org-btn"
-              style={{
-                textAlign: "left",
-                padding: "9px 12px",
-                borderRadius: "8px",
-                fontSize: "13px",
-                fontWeight: "500",
-                cursor: "pointer",
-                border: "none",
-                fontFamily: "'DM Sans', sans-serif",
-                background: selectedOrg?._id === org._id
-                  ? "rgba(6,182,212,0.12)"
-                  : "transparent",
-                color: selectedOrg?._id === org._id
-                  ? "#22d3ee"
-                  : "rgba(255,255,255,0.55)",
-                borderLeft: selectedOrg?._id === org._id
-                  ? "2px solid #06b6d4"
-                  : "2px solid transparent",
-              }}
-            >
-              {org.name}
-            </button>
-          ))}
-        </aside>
+        <Sidebar
+          orgs={orgs}
+          selectedOrg={selectedOrg}
+          onSelectOrg={setSelectedOrg}
+          onCreateOrg={() => setShowOrgModal(true)}
+        />
 
         {/* Main content */}
         <main style={{ flex: 1, padding: "32px", overflowY: "auto" }}>
@@ -476,7 +284,6 @@ function Dashboard() {
                         boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
                       }}
                     >
-                      {/* Board color accent */}
                       <div style={{
                         width: "100%",
                         height: "4px",
@@ -566,43 +373,18 @@ function Dashboard() {
                 autoFocus
               />
               <div style={{ display: "flex", gap: "8px" }}>
-                <button
-                  type="submit"
-                  className="primary-btn"
-                  style={{
-                    flex: 1,
-                    background: "linear-gradient(135deg, #0891b2, #06b6d4)",
-                    border: "none",
-                    borderRadius: "10px",
-                    padding: "11px",
-                    color: "#fff",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                    fontFamily: "'DM Sans', sans-serif",
-                    boxShadow: "0 0 20px rgba(6,182,212,0.3)",
-                  }}
-                >
-                  Create
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowOrgModal(false)}
-                  style={{
-                    flex: 1,
-                    background: "rgba(255,255,255,0.05)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: "10px",
-                    padding: "11px",
-                    color: "rgba(255,255,255,0.5)",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                    cursor: "pointer",
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}
-                >
-                  Cancel
-                </button>
+                <button type="submit" className="primary-btn" style={{
+                  flex: 1, background: "linear-gradient(135deg, #0891b2, #06b6d4)",
+                  border: "none", borderRadius: "10px", padding: "11px", color: "#fff",
+                  fontSize: "14px", fontWeight: "600", cursor: "pointer",
+                  fontFamily: "'DM Sans', sans-serif", boxShadow: "0 0 20px rgba(6,182,212,0.3)",
+                }}>Create</button>
+                <button type="button" onClick={() => setShowOrgModal(false)} style={{
+                  flex: 1, background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.08)", borderRadius: "10px",
+                  padding: "11px", color: "rgba(255,255,255,0.5)", fontSize: "14px",
+                  fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+                }}>Cancel</button>
               </div>
             </form>
           </div>
@@ -627,43 +409,18 @@ function Dashboard() {
                 autoFocus
               />
               <div style={{ display: "flex", gap: "8px" }}>
-                <button
-                  type="submit"
-                  className="primary-btn"
-                  style={{
-                    flex: 1,
-                    background: "linear-gradient(135deg, #0891b2, #06b6d4)",
-                    border: "none",
-                    borderRadius: "10px",
-                    padding: "11px",
-                    color: "#fff",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                    fontFamily: "'DM Sans', sans-serif",
-                    boxShadow: "0 0 20px rgba(6,182,212,0.3)",
-                  }}
-                >
-                  Create
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowBoardModal(false)}
-                  style={{
-                    flex: 1,
-                    background: "rgba(255,255,255,0.05)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: "10px",
-                    padding: "11px",
-                    color: "rgba(255,255,255,0.5)",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                    cursor: "pointer",
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}
-                >
-                  Cancel
-                </button>
+                <button type="submit" className="primary-btn" style={{
+                  flex: 1, background: "linear-gradient(135deg, #0891b2, #06b6d4)",
+                  border: "none", borderRadius: "10px", padding: "11px", color: "#fff",
+                  fontSize: "14px", fontWeight: "600", cursor: "pointer",
+                  fontFamily: "'DM Sans', sans-serif", boxShadow: "0 0 20px rgba(6,182,212,0.3)",
+                }}>Create</button>
+                <button type="button" onClick={() => setShowBoardModal(false)} style={{
+                  flex: 1, background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.08)", borderRadius: "10px",
+                  padding: "11px", color: "rgba(255,255,255,0.5)", fontSize: "14px",
+                  fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+                }}>Cancel</button>
               </div>
             </form>
           </div>
