@@ -2,11 +2,12 @@ import express from "express";
 import Board from "../models/Board.js";
 import Card from "../models/Card.js";
 import protect from "../middleware/auth.js";
+import { requireRole } from "../middleware/rbac.js";
 
 const router = express.Router();
 
 // Create board
-router.post("/:orgId", protect, async (req, res) => {
+router.post("/:orgId", protect, requireRole("admin"), async (req, res) => {
   try {
     const { name, description, visibility } = req.body;
 
@@ -55,7 +56,11 @@ router.get("/org/:boardId", protect, async (req, res) => {
       .populate("assignees", "name email avatar")
       .sort({ order: 1 });
 
-    res.json({ board, cards });
+    // Get user role
+    const { getUserRole } = await import("../middleware/rbac.js");
+    const userRole = await getUserRole(req.user._id, board.org);
+
+    res.json({ board, cards, userRole });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -64,7 +69,7 @@ router.get("/org/:boardId", protect, async (req, res) => {
 
 
 // Delete board
-router.delete("/:orgId/:boardId", protect, async (req, res) => {
+router.delete("/:orgId/:boardId", protect, requireRole("owner"), async (req, res) => {
   try {
     await Board.findByIdAndDelete(req.params.boardId);
     await Card.deleteMany({ board: req.params.boardId });
@@ -75,7 +80,7 @@ router.delete("/:orgId/:boardId", protect, async (req, res) => {
 });
 
 // Add column
-router.post("/:orgId/:boardId/columns", protect, async (req, res) => {
+router.post("/:orgId/:boardId/columns", protect, requireRole("admin"), async (req, res) => {
   try {
     const { name } = req.body;
     const board = await Board.findById(req.params.boardId);
@@ -92,7 +97,7 @@ router.post("/:orgId/:boardId/columns", protect, async (req, res) => {
 });
 
 // Delete column
-router.delete("/:orgId/:boardId/columns/:columnId", protect, async (req, res) => {
+router.delete("/:orgId/:boardId/columns/:columnId", protect, requireRole("admin"), async (req, res) => {
   try {
     const board = await Board.findById(req.params.boardId);
     if (!board) return res.status(404).json({ message: "Board not found" });

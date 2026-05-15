@@ -12,7 +12,13 @@ const orgSchema = new mongoose.Schema({
   ],
   inviteToken: { type: String },
   inviteTokenExpiry: { type: Date },
+  inviteRole: { type: String, enum: ["admin", "member", "viewer"], default: "member" },
 }, { timestamps: true });
+
+
+
+
 
 const Org = mongoose.model("Org", orgSchema);
 export default Org;
+

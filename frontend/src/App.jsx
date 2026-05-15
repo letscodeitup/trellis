@@ -5,10 +5,13 @@ import Dashboard from "./pages/Dashboard.jsx";
 import Board from "./pages/Board.jsx";
 import NotFound from "./pages/NotFound.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import Invite from "./pages/Invite.jsx";
+
 
 function App() {
   return (
     <Routes>
+      <Route path="/invite/:token" element={<Invite />} />
       <Route path="/" element={<Navigate to="/login" />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />

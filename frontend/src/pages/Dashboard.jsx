@@ -5,6 +5,7 @@ import useAuthStore from "../store/authStore.js";
 import useBoardStore from "../store/boardStore.js";
 import Navbar from "../components/Navbar.jsx";
 import Sidebar from "../components/Sidebar.jsx";
+import api from "../api/axios.js";
 
 function Dashboard() {
   const { user } = useAuthStore();
@@ -16,6 +17,10 @@ function Dashboard() {
   const [showBoardModal, setShowBoardModal] = useState(false);
   const [orgName, setOrgName] = useState("");
   const [boardName, setBoardName] = useState("");
+  const [showInviteModal, setShowInviteModal] = useState(false);
+const [inviteRole, setInviteRole] = useState("member");
+const [inviteLink, setInviteLink] = useState("");
+const [inviteLoading, setInviteLoading] = useState(false);
 
   useEffect(() => { getOrgs(); }, []);
   useEffect(() => { if (selectedOrg) getBoards(selectedOrg._id); }, [selectedOrg]);
@@ -87,6 +92,20 @@ function Dashboard() {
     boxSizing: "border-box",
     marginBottom: "12px",
   };
+
+  const handleGenerateInvite = async () => {
+  setInviteLoading(true);
+  try {
+    const res = await api.post(`/orgs/${selectedOrg._id}/invite`, {
+      role: inviteRole,
+    });
+    setInviteLink(res.data.inviteLink);
+  } catch (err) {
+    toast.error("Failed to generate invite link");
+  } finally {
+    setInviteLoading(false);
+  }
+};
 
   return (
     <div style={{
@@ -244,6 +263,49 @@ function Dashboard() {
                   New Board
                 </button>
               </div>
+              <div style={{ display: "flex", gap: "10px" }}>
+                  <button
+                    onClick={() => { setShowInviteModal(true); setInviteLink(""); }}
+                    style={{
+                      background: "rgba(6,182,212,0.1)",
+                      border: "1px solid rgba(6,182,212,0.2)",
+                      borderRadius: "10px",
+                      padding: "9px 18px",
+                      color: "#06b6d4",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      fontFamily: "'DM Sans', sans-serif",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
+                  >
+                    + Invite Member
+                  </button>
+                  <button
+                    onClick={() => setShowBoardModal(true)}
+                    className="primary-btn"
+                    style={{
+                      background: "linear-gradient(135deg, #0891b2, #06b6d4)",
+                      border: "none",
+                      borderRadius: "10px",
+                      padding: "9px 18px",
+                      color: "#fff",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      fontFamily: "'DM Sans', sans-serif",
+                      boxShadow: "0 0 20px rgba(6,182,212,0.3)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
+                  >
+                    <span style={{ fontSize: "16px", lineHeight: 1 }}>+</span>
+                    New Board
+                  </button>
+                </div>
 
               {/* Boards grid */}
               {loading ? (
@@ -426,6 +488,196 @@ function Dashboard() {
           </div>
         </div>
       )}
+      {showInviteModal && (
+  <div style={modalOverlay} onClick={() => setShowInviteModal(false)}>
+    <div style={modalCard} onClick={(e) => e.stopPropagation()}>
+      <h2 style={{
+        color: "#fff",
+        fontSize: "18px",
+        fontWeight: "700",
+        margin: "0 0 6px",
+        letterSpacing: "-0.3px",
+      }}>
+        Invite Member
+      </h2>
+      <p style={{
+        color: "rgba(255,255,255,0.35)",
+        fontSize: "13px",
+        margin: "0 0 20px",
+      }}>
+        Generate an invite link with a specific role
+      </p>
+
+      {/* Role selector */}
+      <label style={{
+        display: "block",
+        fontSize: "11px",
+        fontWeight: "600",
+        color: "rgba(255,255,255,0.35)",
+        letterSpacing: "0.8px",
+        textTransform: "uppercase",
+        marginBottom: "8px",
+      }}>
+        Role
+      </label>
+
+      <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+        {["viewer", "member", "admin"].map((role) => (
+          <button
+            key={role}
+            onClick={() => setInviteRole(role)}
+            style={{
+              flex: 1,
+              padding: "8px",
+              borderRadius: "8px",
+              border: inviteRole === role
+                ? "1px solid rgba(6,182,212,0.4)"
+                : "1px solid rgba(255,255,255,0.08)",
+              background: inviteRole === role
+                ? "rgba(6,182,212,0.12)"
+                : "rgba(255,255,255,0.03)",
+              color: inviteRole === role
+                ? "#06b6d4"
+                : "rgba(255,255,255,0.4)",
+              fontSize: "12px",
+              fontWeight: "600",
+              cursor: "pointer",
+              fontFamily: "'DM Sans', sans-serif",
+              textTransform: "capitalize",
+              transition: "all 0.15s",
+            }}
+          >
+            {role}
+          </button>
+        ))}
+      </div>
+
+      {/* Role description */}
+      <div style={{
+        background: "rgba(255,255,255,0.03)",
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderRadius: "10px",
+        padding: "12px",
+        marginBottom: "16px",
+        fontSize: "12px",
+        color: "rgba(255,255,255,0.4)",
+        lineHeight: "1.5",
+      }}>
+        {inviteRole === "viewer" && "Can view boards and cards only. Cannot create, edit or delete anything."}
+        {inviteRole === "member" && "Can create and edit cards, move cards between columns. Cannot delete cards or manage columns."}
+        {inviteRole === "admin" && "Can create boards, add/delete columns, delete cards. Cannot delete the workspace."}
+      </div>
+
+      {/* Generate button */}
+      {!inviteLink ? (
+        <button
+          onClick={handleGenerateInvite}
+          disabled={inviteLoading}
+          style={{
+            width: "100%",
+            background: inviteLoading
+              ? "rgba(6,182,212,0.3)"
+              : "linear-gradient(135deg, #0891b2, #06b6d4)",
+            border: "none",
+            borderRadius: "10px",
+            padding: "11px",
+            color: "#fff",
+            fontSize: "14px",
+            fontWeight: "600",
+            cursor: inviteLoading ? "not-allowed" : "pointer",
+            fontFamily: "'DM Sans', sans-serif",
+            boxShadow: "0 0 20px rgba(6,182,212,0.3)",
+            marginBottom: "8px",
+          }}
+        >
+          {inviteLoading ? "Generating..." : "Generate Invite Link"}
+        </button>
+      ) : (
+        <div>
+          <label style={{
+            display: "block",
+            fontSize: "11px",
+            fontWeight: "600",
+            color: "rgba(255,255,255,0.35)",
+            letterSpacing: "0.8px",
+            textTransform: "uppercase",
+            marginBottom: "8px",
+          }}>
+            Invite Link
+          </label>
+          <div style={{
+            display: "flex",
+            gap: "8px",
+            marginBottom: "8px",
+          }}>
+            <input
+              readOnly
+              value={inviteLink}
+              style={{
+                flex: 1,
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(6,182,212,0.2)",
+                borderRadius: "8px",
+                padding: "9px 12px",
+                color: "#22d3ee",
+                fontSize: "12px",
+                outline: "none",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+            />
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(inviteLink);
+                toast.success("Link copied!");
+              }}
+              style={{
+                background: "rgba(6,182,212,0.1)",
+                border: "1px solid rgba(6,182,212,0.2)",
+                borderRadius: "8px",
+                padding: "9px 16px",
+                color: "#06b6d4",
+                fontSize: "13px",
+                fontWeight: "600",
+                cursor: "pointer",
+                fontFamily: "'DM Sans', sans-serif",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Copy
+            </button>
+          </div>
+          <p style={{
+            color: "rgba(255,255,255,0.25)",
+            fontSize: "11px",
+            margin: 0,
+            textAlign: "center",
+          }}>
+            Link expires in 24 hours
+          </p>
+        </div>
+      )}
+
+      <button
+        onClick={() => setShowInviteModal(false)}
+        style={{
+          width: "100%",
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          borderRadius: "10px",
+          padding: "10px",
+          color: "rgba(255,255,255,0.4)",
+          fontSize: "13px",
+          cursor: "pointer",
+          fontFamily: "'DM Sans', sans-serif",
+          marginTop: "8px",
+        }}
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }

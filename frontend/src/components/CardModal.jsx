@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import api from "../api/axios.js";
 
-function CardModal({ card, boardId, orgId, onClose, onUpdate }) {
+function CardModal({ card, boardId, orgId, onClose, onUpdate, canDelete = true, canEdit = true }) {
   const [title, setTitle] = useState(card.title);
   const [description, setDescription] = useState(card.description || "");
   const [priority, setPriority] = useState(card.priority || "medium");
@@ -11,13 +11,45 @@ function CardModal({ card, boardId, orgId, onClose, onUpdate }) {
   const [checklist, setChecklist] = useState(card.checklist || []);
   const [newCheckItem, setNewCheckItem] = useState("");
   const [saving, setSaving] = useState(false);
+  const [members, setMembers] = useState([]);
+  const [assignees, setAssignees] = useState(card.assignees || []);
+
+  useEffect(() => {
+    fetchMembers();
+  }, []);
+
+  const fetchMembers = async () => {
+    try {
+      const res = await api.get(`/orgs/${orgId}`);
+      setMembers(res.data.members);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleToggleAssignee = async (userId) => {
+    const isAssigned = assignees.some((a) => (a._id || a) === userId);
+    const updated = isAssigned
+      ? assignees.filter((a) => (a._id || a) !== userId)
+      : [...assignees, userId];
+    setAssignees(updated);
+    try {
+      const res = await api.put(
+        `/cards/${orgId}/${boardId}/${card._id}`,
+        { assignees: updated }
+      );
+      onUpdate(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
     try {
       const res = await api.put(
         `/cards/${orgId}/${boardId}/${card._id}`,
-        { title, description, priority, dueDate }
+        { title, description, priority, dueDate, assignees }
       );
       onUpdate(res.data);
       onClose();
@@ -94,6 +126,16 @@ function CardModal({ card, boardId, orgId, onClose, onUpdate }) {
     transition: "border-color 0.2s",
   };
 
+  const labelStyle = {
+    display: "block",
+    fontSize: "11px",
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.35)",
+    marginBottom: "8px",
+    letterSpacing: "0.8px",
+    textTransform: "uppercase",
+  };
+
   return (
     <div
       onClick={onClose}
@@ -128,7 +170,6 @@ function CardModal({ card, boardId, orgId, onClose, onUpdate }) {
           * { box-sizing: border-box; }
           input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.2); }
           textarea { resize: none; }
-          .check-item { transition: opacity 0.15s; }
           .check-item:hover .del-check { opacity: 1 !important; }
         `}</style>
 
@@ -143,6 +184,7 @@ function CardModal({ card, boardId, orgId, onClose, onUpdate }) {
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            disabled={!canEdit}
             style={{
               flex: 1,
               background: "transparent",
@@ -176,7 +218,6 @@ function CardModal({ card, boardId, orgId, onClose, onUpdate }) {
               justifyContent: "center",
               flexShrink: 0,
               fontFamily: "'DM Sans', sans-serif",
-              transition: "background 0.15s, color 0.15s",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = "rgba(239,68,68,0.1)";
@@ -196,26 +237,14 @@ function CardModal({ card, boardId, orgId, onClose, onUpdate }) {
 
           {/* Description */}
           <div>
-            <label style={{
-              display: "block",
-              fontSize: "11px",
-              fontWeight: "600",
-              color: "rgba(255,255,255,0.35)",
-              marginBottom: "8px",
-              letterSpacing: "0.8px",
-              textTransform: "uppercase",
-            }}>
-              Description
-            </label>
+            <label style={labelStyle}>Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add a description..."
               rows={3}
-              style={{
-                ...inputStyle,
-                lineHeight: "1.5",
-              }}
+              disabled={!canEdit}
+              style={{ ...inputStyle, lineHeight: "1.5" }}
               onFocus={(e) => e.target.style.borderColor = "rgba(6,182,212,0.4)"}
               onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.08)"}
             />
@@ -224,23 +253,14 @@ function CardModal({ card, boardId, orgId, onClose, onUpdate }) {
           {/* Priority + Due Date */}
           <div style={{ display: "flex", gap: "12px" }}>
             <div style={{ flex: 1 }}>
-              <label style={{
-                display: "block",
-                fontSize: "11px",
-                fontWeight: "600",
-                color: "rgba(255,255,255,0.35)",
-                marginBottom: "8px",
-                letterSpacing: "0.8px",
-                textTransform: "uppercase",
-              }}>
-                Priority
-              </label>
+              <label style={labelStyle}>Priority</label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
+                disabled={!canEdit}
                 style={{
                   ...inputStyle,
-                  cursor: "pointer",
+                  cursor: canEdit ? "pointer" : "not-allowed",
                   color: priorityConfig[priority]?.color || "#fff",
                 }}
                 onFocus={(e) => e.target.style.borderColor = "rgba(6,182,212,0.4)"}
@@ -252,29 +272,116 @@ function CardModal({ card, boardId, orgId, onClose, onUpdate }) {
               </select>
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{
-                display: "block",
-                fontSize: "11px",
-                fontWeight: "600",
-                color: "rgba(255,255,255,0.35)",
-                marginBottom: "8px",
-                letterSpacing: "0.8px",
-                textTransform: "uppercase",
-              }}>
-                Due Date
-              </label>
+              <label style={labelStyle}>Due Date</label>
               <input
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                style={{
-                  ...inputStyle,
-                  colorScheme: "dark",
-                }}
+                disabled={!canEdit}
+                style={{ ...inputStyle, colorScheme: "dark" }}
                 onFocus={(e) => e.target.style.borderColor = "rgba(6,182,212,0.4)"}
                 onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.08)"}
               />
             </div>
+          </div>
+
+          {/* Assignees */}
+          <div>
+            <label style={labelStyle}>Assignees</label>
+            {members.length === 0 ? (
+              <p style={{ color: "rgba(255,255,255,0.25)", fontSize: "13px" }}>
+                No members found
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                {members.map((member) => {
+                  const userId = member.user?._id || member.user;
+                  const userName = member.user?.name || "Unknown";
+                  const userEmail = member.user?.email || "";
+                  const isAssigned = assignees.some((a) => (a._id || a) === userId);
+
+                  return (
+                    <div
+                      key={userId}
+                      onClick={() => canEdit && handleToggleAssignee(userId)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        padding: "8px 12px",
+                        borderRadius: "10px",
+                        border: isAssigned
+                          ? "1px solid rgba(6,182,212,0.3)"
+                          : "1px solid rgba(255,255,255,0.06)",
+                        background: isAssigned
+                          ? "rgba(6,182,212,0.08)"
+                          : "rgba(255,255,255,0.02)",
+                        cursor: canEdit ? "pointer" : "default",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      <div style={{
+                        width: "30px",
+                        height: "30px",
+                        borderRadius: "50%",
+                        background: isAssigned
+                          ? "linear-gradient(135deg, #0891b2, #06b6d4)"
+                          : "rgba(255,255,255,0.1)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "12px",
+                        fontWeight: "700",
+                        color: "#fff",
+                        flexShrink: 0,
+                      }}>
+                        {userName.charAt(0).toUpperCase()}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <p style={{
+                          fontSize: "13px",
+                          fontWeight: "500",
+                          color: isAssigned ? "#22d3ee" : "rgba(255,255,255,0.6)",
+                          margin: 0,
+                        }}>
+                          {userName}
+                        </p>
+                        <p style={{
+                          fontSize: "11px",
+                          color: "rgba(255,255,255,0.25)",
+                          margin: 0,
+                        }}>
+                          {userEmail}
+                        </p>
+                      </div>
+                      <span style={{
+                        fontSize: "10px",
+                        fontWeight: "600",
+                        padding: "2px 7px",
+                        borderRadius: "5px",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.3px",
+                        background: member.role === "owner" ? "rgba(251,191,36,0.1)" :
+                                    member.role === "admin" ? "rgba(6,182,212,0.1)" :
+                                    member.role === "member" ? "rgba(52,211,153,0.1)" :
+                                    "rgba(255,255,255,0.05)",
+                        color: member.role === "owner" ? "#fbbf24" :
+                               member.role === "admin" ? "#06b6d4" :
+                               member.role === "member" ? "#34d399" :
+                               "rgba(255,255,255,0.4)",
+                      }}>
+                        {member.role}
+                      </span>
+                      {isAssigned && (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                          <path d="M20 6L9 17l-5-5" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round"/>
+                        </svg>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Checklist */}
@@ -285,27 +392,14 @@ function CardModal({ card, boardId, orgId, onClose, onUpdate }) {
               alignItems: "center",
               marginBottom: "10px",
             }}>
-              <label style={{
-                fontSize: "11px",
-                fontWeight: "600",
-                color: "rgba(255,255,255,0.35)",
-                letterSpacing: "0.8px",
-                textTransform: "uppercase",
-              }}>
-                Checklist
-              </label>
+              <label style={labelStyle}>Checklist</label>
               {checklist.length > 0 && (
-                <span style={{
-                  fontSize: "11px",
-                  color: "rgba(255,255,255,0.3)",
-                  fontWeight: "500",
-                }}>
+                <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.3)", fontWeight: "500" }}>
                   {doneCount}/{checklist.length} done
                 </span>
               )}
             </div>
 
-            {/* Progress bar */}
             {checklist.length > 0 && (
               <div style={{
                 width: "100%",
@@ -326,7 +420,6 @@ function CardModal({ card, boardId, orgId, onClose, onUpdate }) {
               </div>
             )}
 
-            {/* Items */}
             <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "10px" }}>
               {checklist.map((item, index) => (
                 <div
@@ -363,59 +456,61 @@ function CardModal({ card, boardId, orgId, onClose, onUpdate }) {
                   }}>
                     {item.text}
                   </span>
-                  <button
-                    onClick={() => handleDeleteCheckItem(index)}
-                    className="del-check"
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "#f87171",
-                      cursor: "pointer",
-                      fontSize: "14px",
-                      opacity: 0,
-                      padding: "0 2px",
-                      fontFamily: "'DM Sans', sans-serif",
-                      transition: "opacity 0.15s",
-                    }}
-                  >
-                    ×
-                  </button>
+                  {canDelete && (
+                    <button
+                      onClick={() => handleDeleteCheckItem(index)}
+                      className="del-check"
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#f87171",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        opacity: 0,
+                        padding: "0 2px",
+                        fontFamily: "'DM Sans', sans-serif",
+                        transition: "opacity 0.15s",
+                      }}
+                    >
+                      ×
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
 
-            {/* Add checklist item */}
-            <form onSubmit={handleAddCheckItem} style={{ display: "flex", gap: "8px" }}>
-              <input
-                type="text"
-                value={newCheckItem}
-                onChange={(e) => setNewCheckItem(e.target.value)}
-                placeholder="Add checklist item..."
-                style={{ ...inputStyle, flex: 1 }}
-                onFocus={(e) => e.target.style.borderColor = "rgba(6,182,212,0.4)"}
-                onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.08)"}
-              />
-              <button
-                type="submit"
-                style={{
-                  background: "rgba(6,182,212,0.1)",
-                  border: "1px solid rgba(6,182,212,0.2)",
-                  borderRadius: "10px",
-                  padding: "10px 16px",
-                  color: "#06b6d4",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  fontFamily: "'DM Sans', sans-serif",
-                  whiteSpace: "nowrap",
-                  transition: "background 0.15s",
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(6,182,212,0.18)"}
-                onMouseLeave={(e) => e.currentTarget.style.background = "rgba(6,182,212,0.1)"}
-              >
-                Add
-              </button>
-            </form>
+            {canEdit && (
+              <form onSubmit={handleAddCheckItem} style={{ display: "flex", gap: "8px" }}>
+                <input
+                  type="text"
+                  value={newCheckItem}
+                  onChange={(e) => setNewCheckItem(e.target.value)}
+                  placeholder="Add checklist item..."
+                  style={{ ...inputStyle, flex: 1 }}
+                  onFocus={(e) => e.target.style.borderColor = "rgba(6,182,212,0.4)"}
+                  onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.08)"}
+                />
+                <button
+                  type="submit"
+                  style={{
+                    background: "rgba(6,182,212,0.1)",
+                    border: "1px solid rgba(6,182,212,0.2)",
+                    borderRadius: "10px",
+                    padding: "10px 16px",
+                    color: "#06b6d4",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    fontFamily: "'DM Sans', sans-serif",
+                    whiteSpace: "nowrap",
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "rgba(6,182,212,0.18)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "rgba(6,182,212,0.1)"}
+                >
+                  Add
+                </button>
+              </form>
+            )}
           </div>
         </div>
 
@@ -429,25 +524,27 @@ function CardModal({ card, boardId, orgId, onClose, onUpdate }) {
           background: "rgba(0,0,0,0.15)",
           borderRadius: "0 0 20px 20px",
         }}>
-          <button
-            onClick={handleDeleteCard}
-            style={{
-              background: "rgba(239,68,68,0.08)",
-              border: "1px solid rgba(239,68,68,0.15)",
-              borderRadius: "8px",
-              padding: "8px 14px",
-              color: "#f87171",
-              fontSize: "13px",
-              fontWeight: "500",
-              cursor: "pointer",
-              fontFamily: "'DM Sans', sans-serif",
-              transition: "background 0.15s",
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(239,68,68,0.15)"}
-            onMouseLeave={(e) => e.currentTarget.style.background = "rgba(239,68,68,0.08)"}
-          >
-            Delete card
-          </button>
+          {canDelete ? (
+            <button
+              onClick={handleDeleteCard}
+              style={{
+                background: "rgba(239,68,68,0.08)",
+                border: "1px solid rgba(239,68,68,0.15)",
+                borderRadius: "8px",
+                padding: "8px 14px",
+                color: "#f87171",
+                fontSize: "13px",
+                fontWeight: "500",
+                cursor: "pointer",
+                fontFamily: "'DM Sans', sans-serif",
+                transition: "background 0.15s",
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = "rgba(239,68,68,0.15)"}
+              onMouseLeave={(e) => e.currentTarget.style.background = "rgba(239,68,68,0.08)"}
+            >
+              Delete card
+            </button>
+          ) : <div />}
 
           <div style={{ display: "flex", gap: "8px" }}>
             <button
@@ -466,37 +563,39 @@ function CardModal({ card, boardId, orgId, onClose, onUpdate }) {
             >
               Cancel
             </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              style={{
-                background: saving
-                  ? "rgba(6,182,212,0.3)"
-                  : "linear-gradient(135deg, #0891b2, #06b6d4)",
-                border: "none",
-                borderRadius: "8px",
-                padding: "8px 20px",
-                color: "#fff",
-                fontSize: "13px",
-                fontWeight: "600",
-                cursor: saving ? "not-allowed" : "pointer",
-                fontFamily: "'DM Sans', sans-serif",
-                boxShadow: saving ? "none" : "0 0 16px rgba(6,182,212,0.3)",
-                transition: "transform 0.15s, box-shadow 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                if (!saving) {
-                  e.currentTarget.style.transform = "translateY(-1px)";
-                  e.currentTarget.style.boxShadow = "0 0 24px rgba(6,182,212,0.5)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 0 16px rgba(6,182,212,0.3)";
-              }}
-            >
-              {saving ? "Saving..." : "Save changes"}
-            </button>
+            {canEdit && (
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                style={{
+                  background: saving
+                    ? "rgba(6,182,212,0.3)"
+                    : "linear-gradient(135deg, #0891b2, #06b6d4)",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "8px 20px",
+                  color: "#fff",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: saving ? "not-allowed" : "pointer",
+                  fontFamily: "'DM Sans', sans-serif",
+                  boxShadow: saving ? "none" : "0 0 16px rgba(6,182,212,0.3)",
+                  transition: "transform 0.15s, box-shadow 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  if (!saving) {
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                    e.currentTarget.style.boxShadow = "0 0 24px rgba(6,182,212,0.5)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 0 16px rgba(6,182,212,0.3)";
+                }}
+              >
+                {saving ? "Saving..." : "Save changes"}
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -156,6 +156,13 @@ function Board() {
   const [showActivity, setShowActivity] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("all");
+  const [userRole, setUserRole] = useState(null);
+const canCreateCard = ["member", "admin", "owner"].includes(userRole);
+const canMoveCard = ["member", "admin", "owner"].includes(userRole);
+const canDeleteCard = ["admin", "owner"].includes(userRole);
+const canAddColumn = ["admin", "owner"].includes(userRole);
+const canDeleteColumn = ["admin", "owner"].includes(userRole);
+
   const socket = useSocket(boardId);
 
   const sensors = useSensors(useSensor(PointerSensor));
@@ -190,18 +197,19 @@ function Board() {
     };
   }, [socket]);
 
-  const fetchBoard = async () => {
-    try {
-      const res = await api.get(`/boards/org/${boardId}`);
-      setBoard(res.data.board);
-      setCards(res.data.cards);
-      fetchActivity(res.data.board.org);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+ const fetchBoard = async () => {
+  try {
+    const res = await api.get(`/boards/org/${boardId}`);
+    setBoard(res.data.board);
+    setCards(res.data.cards);
+    setUserRole(res.data.userRole);
+    fetchActivity(res.data.board.org);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const fetchActivity = async (orgId) => {
     try {
@@ -430,7 +438,39 @@ function Board() {
   title={board.name}
   showBack={true}
   rightContent={
-    <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1, maxWidth: "420px" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1, maxWidth: "520px" }}>
+      
+      {/* Role badge — ADD THIS */}
+      {userRole && (
+        <span style={{
+          fontSize: "11px",
+          fontWeight: "600",
+          padding: "3px 10px",
+          borderRadius: "6px",
+          letterSpacing: "0.5px",
+          textTransform: "uppercase",
+          whiteSpace: "nowrap",
+          flexShrink: 0,
+          background: userRole === "owner" ? "rgba(251,191,36,0.1)" :
+                      userRole === "admin" ? "rgba(6,182,212,0.1)" :
+                      userRole === "member" ? "rgba(52,211,153,0.1)" :
+                      "rgba(255,255,255,0.05)",
+          color: userRole === "owner" ? "#fbbf24" :
+                 userRole === "admin" ? "#06b6d4" :
+                 userRole === "member" ? "#34d399" :
+                 "rgba(255,255,255,0.4)",
+          border: `1px solid ${
+            userRole === "owner" ? "rgba(251,191,36,0.2)" :
+            userRole === "admin" ? "rgba(6,182,212,0.2)" :
+            userRole === "member" ? "rgba(52,211,153,0.2)" :
+            "rgba(255,255,255,0.08)"
+          }`,
+        }}>
+          {userRole}
+        </span>
+      )}
+
+      {/* Search */}
       <div style={{ position: "relative", flex: 1 }}>
         <svg style={{
           position: "absolute",
@@ -452,6 +492,8 @@ function Board() {
           style={{ paddingLeft: "30px", width: "100%" }}
         />
       </div>
+
+      {/* Priority filter */}
       <select
         value={priorityFilter}
         onChange={(e) => setPriorityFilter(e.target.value)}
@@ -462,6 +504,8 @@ function Board() {
         <option value="medium">Medium</option>
         <option value="low">Low</option>
       </select>
+
+      {/* Activity */}
       <button
         onClick={() => setShowActivity(!showActivity)}
         style={{
@@ -563,7 +607,8 @@ function Board() {
               </div>
 
               {/* Add card */}
-              {activeColumn === column._id ? (
+              {canCreateCard && (
+                activeColumn === column._id ? (
                 <form onSubmit={(e) => handleAddCard(e, column._id)}>
                   <input
                     autoFocus
@@ -629,11 +674,13 @@ function Board() {
                 >
                   + Add card
                 </button>
+              )
               )}
             </div>
           ))}
 
           {/* Add Column */}
+          {canAddColumn && (
           <div style={{ width: "280px", flexShrink: 0 }}>
             {showAddColumn ? (
               <div style={{
@@ -732,6 +779,7 @@ function Board() {
               </button>
             )}
           </div>
+        )}   
         </div>
       </DndContext>
 
@@ -825,14 +873,16 @@ function Board() {
       )}
 
       {selectedCard && (
-        <CardModal
-          card={selectedCard}
-          boardId={boardId}
-          orgId={board.org}
-          onClose={() => setSelectedCard(null)}
-          onUpdate={handleCardUpdate}
-        />
-      )}
+  <CardModal
+    card={selectedCard}
+    boardId={boardId}
+    orgId={board.org}
+    onClose={() => setSelectedCard(null)}
+    onUpdate={handleCardUpdate}
+    canDelete={canDeleteCard}
+    canEdit={canCreateCard}
+  />
+)}
     </div>
   );
 }

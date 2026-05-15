@@ -2,10 +2,10 @@ import express from "express";
 import Card from "../models/Card.js";
 import protect from "../middleware/auth.js";
 import Activity from "../models/Activity.js";
+import { requireRole } from "../middleware/rbac.js";
 
 const router = express.Router();
-
-router.post("/:orgId/:boardId/:columnId", protect, async (req, res) => {
+router.post("/:orgId/:boardId/:columnId", protect, requireRole("member"), async (req, res) => {
   try {
     const { title, description, priority, dueDate, assignees } = req.body;
 
@@ -70,7 +70,7 @@ router.get("/:orgId/:boardId/:cardId", protect, async (req, res) => {
 });
 
 // Update card
-router.put("/:orgId/:boardId/:cardId", protect, async (req, res) => {
+router.put("/:orgId/:boardId/:cardId", protect, requireRole("member"), async (req, res) => {
   try {
     const card = await Card.findByIdAndUpdate(
       req.params.cardId,
@@ -85,7 +85,7 @@ router.put("/:orgId/:boardId/:cardId", protect, async (req, res) => {
 });
 
 // Delete card
-router.delete("/:orgId/:boardId/:cardId", protect, async (req, res) => {
+router.delete("/:orgId/:boardId/:cardId", protect, requireRole("admin"), async (req, res) => {
   try {
     const card = await Card.findById(req.params.cardId);
     if (!card) return res.status(404).json({ message: "Card not found" });
@@ -106,7 +106,7 @@ router.delete("/:orgId/:boardId/:cardId", protect, async (req, res) => {
 });
 
 // Move card (drag and drop)
-router.put("/:orgId/:boardId/:cardId/move", protect, async (req, res) => {
+router.put("/:orgId/:boardId/:cardId/move", protect, requireRole("member"), async (req, res) => {
   try {
     const { columnId, order } = req.body;
 
@@ -134,7 +134,7 @@ router.put("/:orgId/:boardId/:cardId/move", protect, async (req, res) => {
 });
 
 // Update checklist
-router.put("/:orgId/:boardId/:cardId/checklist", protect, async (req, res) => {
+router.put("/:orgId/:boardId/:cardId/checklist", protect, requireRole("member"), async (req, res) => {
   try {
     const { checklist } = req.body;
     const card = await Card.findByIdAndUpdate(
